@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Explorer — Skip The Syllabus</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050605;
+  --surface:#0b0e0b;
+  --lime:#C5FF4A;
+  --lime-dim:#8BAA52;
+  --text:#F4F6EF;
+  --text-muted:#969D91;
+  --card-bg:#111511;
+  --border:#282D26;
+  --radius:10px;
+}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;display:flex;min-height:100vh;overflow-x:hidden}
+.sidebar{width:240px;min-height:100vh;background:var(--card-bg);border-right:1px solid var(--border);padding:1.5rem 1rem;display:flex;flex-direction:column;gap:.5rem;position:fixed;top:0;left:0;bottom:0;z-index:10}
+.logo{font-size:1rem;font-weight:800;color:var(--lime);margin-bottom:1.5rem;padding:0 .5rem;display:flex;align-items:center;gap:.5rem}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.625rem .75rem;border-radius:8px;color:var(--text-muted);font-size:.875rem;cursor:pointer;transition:all .15s;text-decoration:none}
+.nav-item:hover,.nav-item.active{background:rgba(197,255,74,.08);color:var(--lime)}
+.main{margin-left:240px;flex:1;padding:1.5rem 2rem;max-width:calc(100vw - 240px)}
+.page-header{margin-bottom:1rem}
+.page-header h1{font-size:1.6rem;font-weight:800;letter-spacing:-.5px}
+.page-header p{color:var(--text-muted);font-size:.875rem;margin-top:.2rem}
+
+/* Tabs */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:1.25rem}
+.tab{padding:.625rem 1.25rem;font-size:.875rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-muted);transition:all .15s}
+.tab.active{color:var(--lime);border-bottom-color:var(--lime)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Controls */
+.controls{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center;background:var(--surface);padding:.75rem 1rem;border-radius:var(--radius);border:1px solid var(--border)}
+.btn{display:inline-flex;align-items:center;gap:.35rem;padding:.5rem 1rem;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-lime{background:var(--lime);color:#050605}
+.btn-lime:hover{background:#d9ff6a;box-shadow:0 0 14px rgba(197,255,74,.3)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-muted)}
+.btn-ghost:hover{border-color:var(--lime);color:var(--lime)}
+.btn-ghost.active{border-color:var(--lime);color:var(--lime);background:rgba(197,255,74,.08)}
+input[type=text],input[type=number]{background:var(--card-bg);border:1px solid var(--border);border-radius:6px;padding:.5rem .75rem;color:var(--text);font-size:.85rem;outline:none}
+input[type=number]{width:85px}
+input[type=range]{accent-color:var(--lime);cursor:pointer}
+select{background:var(--card-bg);border:1px solid var(--border);border-radius:6px;padding:.5rem .75rem;color:var(--text);font-size:.8rem;outline:none}
+
+/* 3D Viewport */
+.viewport-grid{display:grid;grid-template-columns:1fr 340px;gap:1.25rem}
+@media(max-width:1100px){.viewport-grid{grid-template-columns:1fr}}
+.canvas-wrap{position:relative;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:#030503;height:520px;box-shadow:inset 0 0 40px rgba(0,0,0,0.8)}
+.canvas-wrap canvas{width:100%;height:100%;display:block}
+.canvas-hint{position:absolute;bottom:10px;left:12px;font-size:.72rem;color:var(--text-muted);background:rgba(5,6,5,0.7);padding:4px 8px;border-radius:4px;pointer-events:none}
+
+/* Detail & Code side panel */
+.side-panel{display:flex;flex-direction:column;gap:1rem}
+.info-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem}
+.info-card h3{font-size:.78rem;font-weight:700;color:var(--lime);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.6px}
+.explanation-text{font-size:.85rem;color:var(--text-muted);line-height:1.6;min-height:54px}
+.traversal-output{font-family:'Consolas','Courier New',monospace;color:var(--lime);font-size:.875rem;background:#050705;padding:.625rem;border-radius:6px;border:1px solid var(--border);margin-top:.5rem;word-break:break-all}
+.code-panel{background:#050705;border:1px solid var(--border);border-radius:6px;padding:.75rem;font-family:'Consolas','Courier New',monospace;font-size:.75rem;color:#b5c4ad;overflow-x:auto;max-height:220px;line-height:1.5;white-space:pre}
+
+/* Legend */
+.legend-row{display:flex;gap:.875rem;flex-wrap:wrap;font-size:.75rem;margin-top:.5rem;color:var(--text-muted)}
+.legend-item{display:flex;align-items:center;gap:.35rem}
+.dot{width:10px;height:10px;border-radius:50%}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="logo">⚡ SKIP THE SYLLABUS</div>
+  <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
+  <a class="nav-item" href="upload.html">📤 Upload PDF</a>
+  <a class="nav-item" href="quiz.html">⚡ Quiz Lab</a>
+  <a class="nav-item active" href="explorer.html">🔮 3D Explorer</a>
+  <a class="nav-item" href="settings.html">⚙️ Settings</a>
+  <a class="nav-item" href="index.html" style="margin-top:auto">🏠 Home</a>
+</nav>
+
+<main class="main">
+  <div class="page-header">
+    <h1>🔮 3D Interactive Knowledge Explorer</h1>
+    <p>Real Three.js data structures & sorting algorithms. Manipulate, step through, and understand.</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchMode('bst',this)">🌳 3D Binary Search Tree</div>
+    <div class="tab" onclick="switchMode('sort',this)">📊 3D Sorting Visualizer</div>
+  </div>
+
+  <!-- ==================== BST TAB ==================== -->
+  <div class="tab-content active" id="tab-bst">
+    <div class="controls">
+      <input type="number" id="bstVal" placeholder="Integer" min="-999" max="999" value="42" />
+      <button class="btn btn-lime" onclick="uiInsertBST()">+ Insert Node</button>
+      <button class="btn btn-ghost" onclick="uiTraverse('inorder')">In-Order</button>
+      <button class="btn btn-ghost" onclick="uiTraverse('preorder')">Pre-Order</button>
+      <button class="btn btn-ghost" onclick="uiTraverse('postorder')">Post-Order</button>
+      <button class="btn btn-ghost" onclick="uiStepNext()" id="btnStepNext" disabled>Step Next ⏭</button>
+      <button class="btn btn-ghost" onclick="uiLoadDemoBST()">Demo Tree</button>
+      <button class="btn btn-ghost" onclick="uiClearBST()" style="color:#ff6060">Clear</button>
+      <button class="btn btn-ghost" onclick="resetBSTCamera()">Reset Camera 🎥</button>
+    </div>
+
+    <div class="viewport-grid">
+      <div class="canvas-wrap">
+        <canvas id="bstCanvas3D"></canvas>
+        <div class="canvas-hint">Drag to rotate 3D view · Scroll to zoom</div>
+      </div>
+
+      <div class="side-panel">
+        <div class="info-card">
+          <h3>Algorithm State</h3>
+          <div class="explanation-text" id="bstExplText">Insert numbers or load demo tree to start exploring in 3D.</div>
+          <div class="traversal-output" id="bstTraversalOutput">Traversal: None</div>
+          <div class="legend-row">
+            <div class="legend-item"><div class="dot" style="background:#C5FF4A"></div> Normal Node</div>
+            <div class="legend-item"><div class="dot" style="background:#ff9500"></div> Traversed / Visited</div>
+            <div class="legend-item"><div class="dot" style="background:#00ffff"></div> Current Focus</div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>Java OOP Implementation</h3>
+          <div class="code-panel">// Binary Search Tree (Java OOP)
+public class BSTNode {
+    int val;
+    BSTNode left, right;
+    public BSTNode(int v) { this.val = v; }
+}
+
+public class BST {
+    private BSTNode root;
+
+    public void insert(int val) {
+        root = insertRec(root, val);
+    }
+    private BSTNode insertRec(BSTNode node, int val) {
+        if (node == null) return new BSTNode(val);
+        if (val < node.val) node.left = insertRec(node.left, val);
+        else if (val > node.val) node.right = insertRec(node.right, val);
+        return node; // Duplicate keys ignored
+    }
+}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SORTING TAB ==================== -->
+  <div class="tab-content" id="tab-sort">
+    <div class="controls">
+      <label style="font-size:.78rem;color:var(--text-muted)">Algorithm:</label>
+      <select id="sortAlgo">
+        <option value="bubble" selected>Bubble Sort — O(n²)</option>
+        <option value="selection">Selection Sort — O(n²)</option>
+        <option value="insertion">Insertion Sort — O(n²)</option>
+      </select>
+
+      <label style="font-size:.78rem;color:var(--text-muted);margin-left:.5rem">Elements:</label>
+      <input type="range" id="sortSizeRange" min="8" max="32" value="16" onchange="uiGenerateSortArray()" />
+      <span id="sortSizeLabel" style="font-size:.8rem;color:var(--lime);font-weight:700">16</span>
+
+      <label style="font-size:.78rem;color:var(--text-muted);margin-left:.5rem">Speed:</label>
+      <input type="range" id="sortSpeedRange" min="20" max="600" value="180" />
+
+      <button class="btn btn-lime" onclick="uiRunSort()" id="btnSortPlay">▶ Run Sort</button>
+      <button class="btn btn-ghost" onclick="uiPauseSort()" id="btnSortPause" disabled>⏸ Pause</button>
+      <button class="btn btn-ghost" onclick="uiStepSort()" id="btnSortStep">Next Step ⏭</button>
+      <button class="btn btn-ghost" onclick="uiGenerateSortArray()">🎲 Randomize</button>
+      <button class="btn btn-ghost" onclick="resetSortCamera()">Reset Camera 🎥</button>
+    </div>
+
+    <div class="viewport-grid">
+      <div class="canvas-wrap">
+        <canvas id="sortCanvas3D"></canvas>
+        <div class="canvas-hint">Drag to orbit 3D columns · Scroll to zoom</div>
+      </div>
+
+      <div class="side-panel">
+        <div class="info-card">
+          <h3>Algorithm State</h3>
+          <div class="explanation-text" id="sortExplText">Pick an algorithm and click Run or Next Step to see 3D columns swap.</div>
+          <div class="legend-row">
+            <div class="legend-item"><div class="dot" style="background:#C5FF4A"></div> Default</div>
+            <div class="legend-item"><div class="dot" style="background:#ff9500"></div> Comparing</div>
+            <div class="legend-item"><div class="dot" style="background:#ff4444"></div> Swapping</div>
+            <div class="legend-item"><div class="dot" style="background:#00ffff"></div> Sorted</div>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>Java OOP Implementation</h3>
+          <div class="code-panel" id="sortCodePanel">// Bubble Sort Algorithm (Java)
+public static void bubbleSort(int[] a) {
+    int n = a.length;
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            // Compare adjacent items
+            if (a[j] > a[j + 1]) {
+                int temp = a[j];
+                a[j] = a[j + 1];
+                a[j + 1] = temp;
+            }
+        }
+    }
+}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/three.min.js"></script>
+<script>
+// ═════════════════════════════════════════════════════════════════
+// 1. DATA STRUCTURE LOGIC (Java OOP Equivalent in JS)
+// ═════════════════════════════════════════════════════════════════
+class BSTNode {
+  constructor(val) {
+    this.val = val;
+    this.left = null;
+    this.right = null;
+    this.mesh = null;
+    this.lineLeft = null;
+    this.lineRight = null;
+    this.x = 0;
+    this.y = 0;
+    this.z = 0;
+  }
+}
+
+class BST {
+  constructor() {
+    this.root = null;
+  }
+
+  insert(val) {
+    if (!this.root) {
+      this.root = new BSTNode(val);
+      return { node: this.root, path: [val] };
+    }
+    let cur = this.root;
+    const path = [];
+    while (true) {
+      path.push(cur.val);
+      if (val === cur.val) return { node: null, path, duplicate: true };
+      if (val < cur.val) {
+        if (!cur.left) {
+          cur.left = new BSTNode(val);
+          return { node: cur.left, path: [...path, val], duplicate: false };
+        }
+        cur = cur.left;
+      } else {
+        if (!cur.right) {
+          cur.right = new BSTNode(val);
+          return { node: cur.right, path: [...path, val], duplicate: false };
+        }
+        cur = cur.right;
+      }
+    }
+  }
+
+  inorder(n = this.root, r = []) {
+    if (!n) return r;
+    this.inorder(n.left, r);
+    r.push(n.val);
+    this.inorder(n.right, r);
+    return r;
+  }
+
+  preorder(n = this.root, r = []) {
+    if (!n) return r;
+    r.push(n.val);
+    this.preorder(n.left, r);
+    this.preorder(n.right, r);
+    return r;
+  }
+
+  postorder(n = this.root, r = []) {
+    if (!n) return r;
+    this.postorder(n.left, r);
+    this.postorder(n.right, r);
+    r.push(n.val);
+    return r;
+  }
+
+  clear() {
+    this.root = null;
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 2. THREE.JS 3D SCENE SETUP & CONTROLS HELPER
+// ═════════════════════════════════════════════════════════════════
+function setupOrbitInteraction(canvas, group, camera, initialCamZ = 12) {
+  let isDragging = false;
+  let prevX = 0, prevY = 0;
+
+  canvas.addEventListener('mousedown', e => {
+    isDragging = true;
+    prevX = e.clientX;
+    prevY = e.clientY;
+  });
+
+  window.addEventListener('mouseup', () => isDragging = false);
+
+  canvas.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    const dx = e.clientX - prevX;
+    const dy = e.clientY - prevY;
+    group.rotation.y += dx * 0.008;
+    group.rotation.x += dy * 0.008;
+    prevX = e.clientX;
+    prevY = e.clientY;
+  });
+
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    camera.position.z += e.deltaY * 0.01;
+    camera.position.z = Math.max(4, Math.min(camera.position.z, 28));
+  }, { passive: false });
+}
+
+function createTextSprite(text) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = 'rgba(5, 7, 5, 0.85)';
+  ctx.beginPath();
+  ctx.arc(64, 64, 52, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#C5FF4A';
+  ctx.lineWidth = 6;
+  ctx.stroke();
+
+  ctx.fillStyle = '#C5FF4A';
+  ctx.font = 'bold 44px Consolas, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(text), 64, 64);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(1.4, 1.4, 1.4);
+  return sprite;
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 3. 3D BINARY SEARCH TREE VISUALIZER
+// ═════════════════════════════════════════════════════════════════
+const bstInstance = new BST();
+let bstScene, bstCamera, bstRenderer, bstGroup;
+const bstNodeMeshes = new Map(); // val -> { sphere, sprite }
+let bstEdgesGroup = new THREE.Group();
+let bstNodesGroup = new THREE.Group();
+let traversalQueue = [];
+let traversalIndex = 0;
+let traversalTimer = null;
+
+function initBSTScene() {
+  const canvas = document.getElementById('bstCanvas3D');
+  const wrap = canvas.parentElement;
+
+  bstScene = new THREE.Scene();
+  bstCamera = new THREE.PerspectiveCamera(45, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+  bstCamera.position.set(0, 0, 14);
+
+  bstRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  bstRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  bstRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Lights
+  const ambLight = new THREE.AmbientLight(0x1a2e15, 2.0);
+  bstScene.add(ambLight);
+
+  const ptLight = new THREE.PointLight(0xC5FF4A, 3.0, 30);
+  ptLight.position.set(0, 5, 8);
+  bstScene.add(ptLight);
+
+  bstGroup = new THREE.Group();
+  bstGroup.add(bstEdgesGroup);
+  bstGroup.add(bstNodesGroup);
+  bstScene.add(bstGroup);
+
+  // Background subtle starfield
+  const partGeo = new THREE.BufferGeometry();
+  const partPos = new Float32Array(300 * 3);
+  for (let i = 0; i < 300 * 3; i += 3) {
+    partPos[i] = (Math.random() - 0.5) * 40;
+    partPos[i+1] = (Math.random() - 0.5) * 30;
+    partPos[i+2] = (Math.random() - 0.5) * 30 - 10;
+  }
+  partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+  const partMat = new THREE.PointsMaterial({ size: 0.08, color: 0xC5FF4A, transparent: true, opacity: 0.3 });
+  bstScene.add(new THREE.Points(partGeo, partMat));
+
+  setupOrbitInteraction(canvas, bstGroup, bstCamera, 14);
+
+  function animateBST() {
+    requestAnimationFrame(animateBST);
+    bstRenderer.render(bstScene, bstCamera);
+  }
+  animateBST();
+}
+
+function resetBSTCamera() {
+  bstGroup.rotation.set(0, 0, 0);
+  bstCamera.position.set(0, 0, 14);
+}
+
+function buildTree3D() {
+  // Clear previous meshes
+  while (bstEdgesGroup.children.length > 0) bstEdgesGroup.remove(bstEdgesGroup.children[0]);
+  while (bstNodesGroup.children.length > 0) bstNodesGroup.remove(bstNodesGroup.children[0]);
+  bstNodeMeshes.clear();
+
+  if (!bstInstance.root) return;
+
+  function layout(node, depth, x, xOffset) {
+    if (!node) return;
+    node.x = x;
+    node.y = 4.2 - depth * 2.2;
+    node.z = 0;
+
+    // Node geometry: glowing sphere with sprite label
+    const geo = new THREE.SphereGeometry(0.65, 24, 24);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x0a1408,
+      emissive: 0x163308,
+      emissiveIntensity: 0.8,
+      roughness: 0.2,
+      metalness: 0.8
+    });
+    const sphere = new THREE.Mesh(geo, mat);
+    sphere.position.set(node.x, node.y, node.z);
+
+    const sprite = createTextSprite(node.val);
+    sprite.position.set(node.x, node.y, node.z + 0.1);
+
+    bstNodesGroup.add(sphere);
+    bstNodesGroup.add(sprite);
+    bstNodeMeshes.set(node.val, { sphere, mat, sprite, val: node.val });
+
+    // Left edge
+    if (node.left) {
+      layout(node.left, depth + 1, x - xOffset, xOffset * 0.52);
+      createEdge(node.x, node.y, node.left.x, node.left.y);
+    }
+    // Right edge
+    if (node.right) {
+      layout(node.right, depth + 1, x + xOffset, xOffset * 0.52);
+      createEdge(node.x, node.y, node.right.x, node.right.y);
+    }
+  }
+
+  layout(bstInstance.root, 0, 0, 4.0);
+}
+
+function createEdge(x1, y1, x2, y2) {
+  const points = [new THREE.Vector3(x1, y1, 0), new THREE.Vector3(x2, y2, 0)];
+  const geo = new THREE.BufferGeometry().setFromPoints(points);
+  const mat = new THREE.LineBasicMaterial({ color: 0xC5FF4A, transparent: true, opacity: 0.45, linewidth: 2 });
+  const line = new THREE.Line(geo, mat);
+  bstEdgesGroup.add(line);
+}
+
+function highlightNode(val, colorHex, emissiveIntensity = 1.6) {
+  const entry = bstNodeMeshes.get(val);
+  if (!entry) return;
+  entry.mat.color.setHex(colorHex);
+  entry.mat.emissive.setHex(colorHex);
+  entry.mat.emissiveIntensity = emissiveIntensity;
+}
+
+function resetNodeColors() {
+  bstNodeMeshes.forEach(entry => {
+    entry.mat.color.setHex(0x0a1408);
+    entry.mat.emissive.setHex(0x163308);
+    entry.mat.emissiveIntensity = 0.8;
+  });
+}
+
+function uiInsertBST() {
+  const input = document.getElementById('bstVal');
+  const val = parseInt(input.value);
+  if (isNaN(val)) return;
+
+  const result = bstInstance.insert(val);
+  buildTree3D();
+
+  if (result.duplicate) {
+    document.getElementById('bstExplText').textContent =
+      `Duplicate value ${val} rejected: BST properties require unique keys.`;
+    highlightNode(val, 0xff4444);
+    setTimeout(resetNodeColors, 1200);
+  } else {
+    document.getElementById('bstExplText').textContent =
+      `Inserted node ${val}. Traversed insertion path: [${result.path.join(' → ')}].`;
+    // Animate path
+    result.path.forEach((pVal, idx) => {
+      setTimeout(() => {
+        highlightNode(pVal, idx === result.path.length - 1 ? 0x00ffff : 0xff9500);
+      }, idx * 250);
+    });
+    setTimeout(resetNodeColors, result.path.length * 250 + 1000);
+  }
+  input.value = Math.floor(Math.random() * 89) + 10;
+}
+
+function uiLoadDemoBST() {
+  bstInstance.clear();
+  [50, 25, 75, 12, 37, 62, 88].forEach(v => bstInstance.insert(v));
+  buildTree3D();
+  document.getElementById('bstExplText').textContent = 'Demo balanced BST loaded [50, 25, 75, 12, 37, 62, 88]. Ready for traversal.';
+  document.getElementById('bstTraversalOutput').textContent = 'Traversal: None';
+}
+
+function uiClearBST() {
+  bstInstance.clear();
+  buildTree3D();
+  document.getElementById('bstExplText').textContent = 'Tree cleared.';
+  document.getElementById('bstTraversalOutput').textContent = 'Traversal: None';
+  document.getElementById('btnStepNext').disabled = true;
+}
+
+function uiTraverse(order) {
+  let list = [];
+  if (order === 'inorder') list = bstInstance.inorder();
+  else if (order === 'preorder') list = bstInstance.preorder();
+  else if (order === 'postorder') list = bstInstance.postorder();
+
+  if (list.length === 0) {
+    document.getElementById('bstExplText').textContent = 'Tree is empty. Add values first.';
+    return;
+  }
+
+  traversalQueue = list;
+  traversalIndex = 0;
+  resetNodeColors();
+
+  document.getElementById('bstTraversalOutput').textContent =
+    `${order.toUpperCase()}: [ ${list.join(' → ')} ]`;
+  document.getElementById('btnStepNext').disabled = false;
+
+  // Auto-step
+  if (traversalTimer) clearInterval(traversalTimer);
+  traversalTimer = setInterval(() => {
+    if (traversalIndex < traversalQueue.length) {
+      uiStepNext();
+    } else {
+      clearInterval(traversalTimer);
+    }
+  }, 600);
+}
+
+function uiStepNext() {
+  if (traversalIndex >= traversalQueue.length) {
+    document.getElementById('bstExplText').textContent = 'Traversal complete!';
+    document.getElementById('btnStepNext').disabled = true;
+    return;
+  }
+  const currentVal = traversalQueue[traversalIndex];
+  resetNodeColors();
+
+  // Mark all previously visited nodes amber
+  for (let i = 0; i < traversalIndex; i++) {
+    highlightNode(traversalQueue[i], 0xff9500, 1.2);
+  }
+  // Focus current node in cyan
+  highlightNode(currentVal, 0x00ffff, 2.2);
+
+  document.getElementById('bstExplText').textContent =
+    `Visiting step ${traversalIndex + 1}/${traversalQueue.length}: Node [${currentVal}].`;
+  traversalIndex++;
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 4. 3D SORTING ALGORITHM VISUALIZER
+// ═════════════════════════════════════════════════════════════════
+let sortScene, sortCamera, sortRenderer, sortGroup;
+let sortBars = []; // Array of { mesh, val, origX }
+let sortArray = [];
+let sortIsRunning = false;
+let sortIsPaused = false;
+let sortGenerator = null;
+
+const SORT_INFOS = {
+  bubble: {
+    desc: 'Bubble Sort repeatedly steps through the array, compares adjacent elements, and swaps them if out of order. Largest unsorted element bubbles to the right.',
+    code: `// Bubble Sort (Java OOP)
+public static void sort(int[] a) {
+    int n = a.length;
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (a[j] > a[j + 1]) {
+                swap(a, j, j + 1);
+            }
+        }
+    }
+}`
+  },
+  selection: {
+    desc: 'Selection Sort divides the array into sorted and unsorted parts. In each pass, it finds the minimum in the unsorted section and places it at the front.',
+    code: `// Selection Sort (Java OOP)
+public static void sort(int[] a) {
+    int n = a.length;
+    for (int i = 0; i < n - 1; i++) {
+        int minIdx = i;
+        for (int j = i + 1; j < n; j++) {
+            if (a[j] < a[minIdx]) minIdx = j;
+        }
+        swap(a, i, minIdx);
+    }
+}`
+  },
+  insertion: {
+    desc: 'Insertion Sort builds the sorted array one item at a time. It consumes one element per iteration and inserts it into its correct position.',
+    code: `// Insertion Sort (Java OOP)
+public static void sort(int[] a) {
+    int n = a.length;
+    for (int i = 1; i < n; i++) {
+        int key = a[i], j = i - 1;
+        while (j >= 0 && a[j] > key) {
+            a[j + 1] = a[j];
+            j--;
+        }
+        a[j + 1] = key;
+    }
+}`
+  }
+};
+
+function initSortScene() {
+  const canvas = document.getElementById('sortCanvas3D');
+  const wrap = canvas.parentElement;
+
+  sortScene = new THREE.Scene();
+  sortCamera = new THREE.PerspectiveCamera(45, wrap.clientWidth / wrap.clientHeight, 0.1, 100);
+  sortCamera.position.set(0, 4, 16);
+
+  sortRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  sortRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+  sortRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Lights
+  const ambLight = new THREE.AmbientLight(0x1a2e15, 1.8);
+  sortScene.add(ambLight);
+
+  const ptLight = new THREE.PointLight(0xC5FF4A, 3.5, 30);
+  ptLight.position.set(0, 8, 10);
+  sortScene.add(ptLight);
+
+  sortGroup = new THREE.Group();
+  sortScene.add(sortGroup);
+
+  setupOrbitInteraction(canvas, sortGroup, sortCamera, 16);
+
+  function animateSort() {
+    requestAnimationFrame(animateSort);
+    sortRenderer.render(sortScene, sortCamera);
+  }
+  animateSort();
+
+  uiGenerateSortArray();
+}
+
+function resetSortCamera() {
+  sortGroup.rotation.set(0, 0, 0);
+  sortCamera.position.set(0, 4, 16);
+}
+
+function uiGenerateSortArray() {
+  sortIsRunning = false;
+  sortIsPaused = false;
+  document.getElementById('btnSortPlay').disabled = false;
+  document.getElementById('btnSortPause').disabled = true;
+
+  const size = parseInt(document.getElementById('sortSizeRange').value);
+  document.getElementById('sortSizeLabel').textContent = size;
+
+  sortArray = [];
+  for (let i = 0; i < size; i++) {
+    sortArray.push(Math.floor(Math.random() * 85) + 12);
+  }
+
+  buildSortBars3D();
+  updateSortCodeInfo();
+  document.getElementById('sortExplText').textContent =
+    `Generated ${size} randomized elements in 3D. Select an algorithm and start sorting.`;
+}
+
+function buildSortBars3D() {
+  while (sortGroup.children.length > 0) sortGroup.remove(sortGroup.children[0]);
+  sortBars = [];
+
+  const n = sortArray.length;
+  const totalWidth = 14.0;
+  const barWidth = Math.min(0.7, (totalWidth / n) * 0.75);
+  const gap = totalWidth / n;
+  const startX = -totalWidth / 2 + gap / 2;
+
+  sortArray.forEach((val, i) => {
+    const height = (val / 100) * 6.5;
+    const geo = new THREE.BoxGeometry(barWidth, height, barWidth);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0x163308,
+      emissive: 0xC5FF4A,
+      emissiveIntensity: 0.35,
+      metalness: 0.8,
+      roughness: 0.2
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    const x = startX + i * gap;
+    mesh.position.set(x, height / 2 - 2.5, 0);
+
+    sortGroup.add(mesh);
+    sortBars.push({ mesh, mat, val, xIndex: i, targetX: x });
+  });
+}
+
+function setBarColor(idx, colorHex, intensity = 0.5) {
+  if (idx < 0 || idx >= sortBars.length) return;
+  sortBars[idx].mat.emissive.setHex(colorHex);
+  sortBars[idx].mat.emissiveIntensity = intensity;
+}
+
+function resetBarColors() {
+  sortBars.forEach(b => {
+    b.mat.emissive.setHex(0xC5FF4A);
+    b.mat.emissiveIntensity = 0.35;
+  });
+}
+
+function updateSortCodeInfo() {
+  const algo = document.getElementById('sortAlgo').value;
+  const info = SORT_INFOS[algo];
+  if (info) {
+    document.getElementById('sortCodePanel').textContent = info.code;
+  }
+}
+
+document.getElementById('sortAlgo').addEventListener('change', updateSortCodeInfo);
+
+// Sorting Generators for Step-by-Step execution
+function* bubbleSortGen() {
+  const n = sortArray.length;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < n - i - 1; j++) {
+      yield { type: 'compare', j, k: j + 1, msg: `Comparing element ${sortArray[j]} and ${sortArray[j+1]}` };
+      if (sortArray[j] > sortArray[j + 1]) {
+        // Swap values
+        const tmp = sortArray[j];
+        sortArray[j] = sortArray[j + 1];
+        sortArray[j + 1] = tmp;
+
+        // Swap visual representation heights
+        const h1 = (sortArray[j] / 100) * 6.5;
+        const h2 = (sortArray[j + 1] / 100) * 6.5;
+
+        sortBars[j].mesh.scale.y = sortArray[j] / sortBars[j].val;
+        sortBars[j + 1].mesh.scale.y = sortArray[j + 1] / sortBars[j + 1].val;
+
+        yield { type: 'swap', j, k: j + 1, msg: `Swapped: ${sortArray[j+1]} > ${sortArray[j]}` };
+      }
+    }
+    yield { type: 'sorted', idx: n - i - 1 };
+  }
+  yield { type: 'done' };
+}
+
+function* selectionSortGen() {
+  const n = sortArray.length;
+  for (let i = 0; i < n - 1; i++) {
+    let minIdx = i;
+    for (let j = i + 1; j < n; j++) {
+      yield { type: 'compare', j, k: minIdx, msg: `Scanning unsorted: comparing ${sortArray[j]} with min ${sortArray[minIdx]}` };
+      if (sortArray[j] < sortArray[minIdx]) minIdx = j;
+    }
+    if (minIdx !== i) {
+      const tmp = sortArray[i];
+      sortArray[i] = sortArray[minIdx];
+      sortArray[minIdx] = tmp;
+
+      sortBars[i].mesh.scale.y = sortArray[i] / sortBars[i].val;
+      sortBars[minIdx].mesh.scale.y = sortArray[minIdx] / sortBars[minIdx].val;
+
+      yield { type: 'swap', j: i, k: minIdx, msg: `Placed minimum ${sortArray[i]} into sorted position ${i}` };
+    }
+    yield { type: 'sorted', idx: i };
+  }
+  yield { type: 'done' };
+}
+
+function* insertionSortGen() {
+  const n = sortArray.length;
+  for (let i = 1; i < n; i++) {
+    let key = sortArray[i];
+    let j = i - 1;
+    while (j >= 0 && sortArray[j] > key) {
+      yield { type: 'compare', j, k: j + 1, msg: `Shifting ${sortArray[j]} right because ${sortArray[j]} > ${key}` };
+      sortArray[j + 1] = sortArray[j];
+      sortBars[j + 1].mesh.scale.y = sortArray[j + 1] / sortBars[j + 1].val;
+      yield { type: 'swap', j, k: j + 1, msg: `Shifted item right` };
+      j--;
+    }
+    sortArray[j + 1] = key;
+    sortBars[j + 1].mesh.scale.y = key / sortBars[j + 1].val;
+    yield { type: 'sorted', idx: i };
+  }
+  yield { type: 'done' };
+}
+
+function applyStep(step) {
+  if (step.type === 'compare') {
+    resetBarColors();
+    setBarColor(step.j, 0xff9500, 1.8);
+    setBarColor(step.k, 0xff9500, 1.8);
+    document.getElementById('sortExplText').textContent = step.msg;
+  } else if (step.type === 'swap') {
+    setBarColor(step.j, 0xff4444, 2.2);
+    setBarColor(step.k, 0xff4444, 2.2);
+    document.getElementById('sortExplText').textContent = step.msg;
+  } else if (step.type === 'sorted') {
+    setBarColor(step.idx, 0x00ffff, 1.5);
+  } else if (step.type === 'done') {
+    sortBars.forEach((_, idx) => setBarColor(idx, 0x00ffff, 1.5));
+    document.getElementById('sortExplText').textContent = '✅ Array is completely sorted in 3D space!';
+    sortIsRunning = false;
+    document.getElementById('btnSortPlay').disabled = false;
+    document.getElementById('btnSortPause').disabled = true;
+  }
+}
+
+function uiStepSort() {
+  if (!sortGenerator) {
+    const algo = document.getElementById('sortAlgo').value;
+    if (algo === 'bubble') sortGenerator = bubbleSortGen();
+    else if (algo === 'selection') sortGenerator = selectionSortGen();
+    else sortGenerator = insertionSortGen();
+  }
+  const next = sortGenerator.next();
+  if (!next.done) {
+    applyStep(next.value);
+  } else {
+    sortGenerator = null;
+  }
+}
+
+async function uiRunSort() {
+  if (sortIsRunning) return;
+  sortIsRunning = true;
+  sortIsPaused = false;
+  document.getElementById('btnSortPlay').disabled = true;
+  document.getElementById('btnSortPause').disabled = false;
+
+  if (!sortGenerator) {
+    const algo = document.getElementById('sortAlgo').value;
+    if (algo === 'bubble') sortGenerator = bubbleSortGen();
+    else if (algo === 'selection') sortGenerator = selectionSortGen();
+    else sortGenerator = insertionSortGen();
+  }
+
+  while (sortIsRunning && !sortIsPaused) {
+    const next = sortGenerator.next();
+    if (next.done) {
+      sortGenerator = null;
+      sortIsRunning = false;
+      document.getElementById('btnSortPlay').disabled = false;
+      document.getElementById('btnSortPause').disabled = true;
+      break;
+    }
+    applyStep(next.value);
+    const speed = 620 - parseInt(document.getElementById('sortSpeedRange').value);
+    await new Promise(r => setTimeout(r, speed));
+  }
+}
+
+function uiPauseSort() {
+  sortIsPaused = true;
+  sortIsRunning = false;
+  document.getElementById('btnSortPlay').disabled = false;
+  document.getElementById('btnSortPause').disabled = true;
+}
+
+// ═════════════════════════════════════════════════════════════════
+// 5. TAB SWITCHING & RESIZING
+// ═════════════════════════════════════════════════════════════════
+function switchMode(mode, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + mode).classList.add('active');
+
+  setTimeout(() => {
+    if (mode === 'bst') {
+      const wrap = document.getElementById('bstCanvas3D').parentElement;
+      bstCamera.aspect = wrap.clientWidth / wrap.clientHeight;
+      bstCamera.updateProjectionMatrix();
+      bstRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+    } else {
+      const wrap = document.getElementById('sortCanvas3D').parentElement;
+      sortCamera.aspect = wrap.clientWidth / wrap.clientHeight;
+      sortCamera.updateProjectionMatrix();
+      sortRenderer.setSize(wrap.clientWidth, wrap.clientHeight);
+    }
+  }, 50);
+}
+
+window.addEventListener('resize', () => {
+  const bstWrap = document.getElementById('bstCanvas3D')?.parentElement;
+  if (bstWrap && bstRenderer) {
+    bstCamera.aspect = bstWrap.clientWidth / bstWrap.clientHeight;
+    bstCamera.updateProjectionMatrix();
+    bstRenderer.setSize(bstWrap.clientWidth, bstWrap.clientHeight);
+  }
+  const sortWrap = document.getElementById('sortCanvas3D')?.parentElement;
+  if (sortWrap && sortRenderer) {
+    sortCamera.aspect = sortWrap.clientWidth / sortWrap.clientHeight;
+    sortCamera.updateProjectionMatrix();
+    sortRenderer.setSize(sortWrap.clientWidth, sortWrap.clientHeight);
+  }
+});
+
+// Initialization
+window.addEventListener('DOMContentLoaded', () => {
+  initBSTScene();
+  uiLoadDemoBST();
+  initSortScene();
+});
+</script>
+</body>
+</html>

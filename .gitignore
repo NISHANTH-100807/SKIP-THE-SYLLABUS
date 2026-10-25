@@ -1,0 +1,39 @@
+# Skip The Syllabus — .gitignore
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.classpath
+*.project
+*.settings/
+
+# Secrets — NEVER COMMIT
+.env
+*.env.local
+
+# H2 database files
+data/
+*.db
+*.mv.db
+*.trace.db
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Java
+*.class
+*.jar
+!*-wrapper.jar
+
+# Spring Boot
+spring.pid

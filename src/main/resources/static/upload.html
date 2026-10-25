@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upload PDF — Skip The Syllabus</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050605;--lime:#C5FF4A;--lime-dim:#9acc2e;--text:#e8ffe8;--text-muted:#7a8a70;--card-bg:#0d110c;--border:#1a2218;--radius:12px}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;display:flex;min-height:100vh}
+.sidebar{width:240px;min-height:100vh;background:var(--card-bg);border-right:1px solid var(--border);padding:1.5rem 1rem;display:flex;flex-direction:column;gap:.5rem;position:fixed;top:0;left:0;bottom:0}
+.logo{font-size:1rem;font-weight:800;color:var(--lime);margin-bottom:1.5rem;padding:0 .5rem}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.625rem .75rem;border-radius:8px;color:var(--text-muted);font-size:.875rem;cursor:pointer;transition:all .15s;text-decoration:none}
+.nav-item:hover,.nav-item.active{background:rgba(197,255,74,.08);color:var(--lime)}
+.main{margin-left:240px;flex:1;padding:2rem;max-width:calc(100vw - 240px)}
+.page-header{margin-bottom:2rem}
+.page-header h1{font-size:1.75rem;font-weight:800;letter-spacing:-.5px}
+.page-header p{color:var(--text-muted);margin-top:.25rem}
+/* Upload zone */
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:4rem 2rem;text-align:center;cursor:pointer;transition:all .3s;margin-bottom:2rem;background:rgba(197,255,74,.02)}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--lime);background:rgba(197,255,74,.05)}
+.upload-icon{font-size:3rem;margin-bottom:1rem}
+.upload-zone h3{font-size:1.1rem;font-weight:700;margin-bottom:.5rem}
+.upload-zone p{color:var(--text-muted);font-size:.9rem}
+.upload-zone .browse{color:var(--lime);cursor:pointer;text-decoration:underline}
+input[type=file]{display:none}
+/* Progress */
+.upload-progress{display:none;margin-bottom:2rem}
+.progress-bar-wrap{background:var(--border);border-radius:100px;height:8px;margin:.75rem 0}
+.progress-bar{background:var(--lime);height:8px;border-radius:100px;transition:width .3s;width:0}
+.progress-status{font-size:.875rem;color:var(--text-muted)}
+/* Document library */
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.card-header h2{font-size:1rem;font-weight:700}
+.badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:.7rem;font-weight:600}
+.badge-ready{background:rgba(197,255,74,.15);color:var(--lime)}
+.badge-processing{background:rgba(255,165,0,.15);color:orange}
+.badge-failed{background:rgba(255,80,80,.15);color:#ff6060}
+.badge-uploaded{background:rgba(150,150,150,.15);color:#aaa}
+.doc-row{display:flex;align-items:center;gap:1rem;padding:.875rem;border-radius:8px;border-bottom:1px solid var(--border);transition:background .15s}
+.doc-row:last-child{border-bottom:none}
+.doc-row:hover{background:rgba(255,255,255,.02)}
+.doc-icon{font-size:1.5rem;flex-shrink:0}
+.doc-info{flex:1;min-width:0}
+.doc-name{font-size:.875rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-meta{font-size:.75rem;color:var(--text-muted);margin-top:2px}
+.doc-actions{display:flex;gap:.5rem;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;gap:.35rem;padding:.4rem .875rem;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+.btn-lime{background:var(--lime);color:#050605}
+.btn-lime:hover{background:#d9ff6a}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-muted)}
+.btn-ghost:hover{border-color:var(--lime);color:var(--lime)}
+.btn-danger{background:transparent;border:1px solid #2a1515;color:#ff6060}
+.btn-danger:hover{background:rgba(255,80,80,.08)}
+.empty{text-align:center;padding:3rem;color:var(--text-muted)}
+.empty .icon{font-size:2.5rem;margin-bottom:.75rem}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--lime);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:.875rem 1.25rem;font-size:.875rem;z-index:999;transform:translateY(100px);opacity:0;transition:all .3s}
+.toast.show{transform:none;opacity:1}
+.toast.success{border-color:var(--lime);color:var(--lime)}
+.toast.error{border-color:#ff6060;color:#ff6060}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="logo">⚡ SKIP THE SYLLABUS</div>
+  <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
+  <a class="nav-item active" href="upload.html">📤 Upload PDF</a>
+  <a class="nav-item" href="quiz.html">⚡ Quiz Lab</a>
+  <a class="nav-item" href="explorer.html">🔮 3D Explorer</a>
+  <a class="nav-item" href="settings.html">⚙️ Settings</a>
+  <a class="nav-item" href="index.html" style="margin-top:auto">🏠 Home</a>
+</nav>
+
+<main class="main">
+  <div class="page-header">
+    <h1>📤 Upload PDF</h1>
+    <p>Drop your syllabus. We'll cook it back for you.</p>
+  </div>
+
+  <div class="upload-zone" id="dropZone">
+    <div class="upload-icon">📄</div>
+    <h3>Drop your PDF here</h3>
+    <p>or <span class="browse" onclick="document.getElementById('fileInput').click()">click to browse</span></p>
+    <p style="margin-top:.5rem;font-size:.8rem">Max 50MB · PDF only</p>
+    <input type="file" id="fileInput" accept=".pdf">
+  </div>
+
+  <div class="upload-progress" id="uploadProgress">
+    <div style="display:flex;align-items:center;gap:.75rem">
+      <div class="spinner"></div>
+      <span id="progressLabel">Uploading...</span>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="progress-status" id="progressStatus">Sending file to server...</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>📚 Document Library</h2>
+      <button class="btn btn-ghost" onclick="loadDocuments()">↻ Refresh</button>
+    </div>
+    <div id="docsList"><div class="empty"><div class="icon">📂</div><p>No documents yet. Upload your first PDF!</p></div></div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let pollInterval = null;
+
+// ── Drag & Drop ──────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) uploadFile(file);
+});
+dropZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) uploadFile(fileInput.files[0]); });
+
+// ── Upload ────────────────────────────────────────────────────────
+async function uploadFile(file) {
+  if (!file.name.toLowerCase().endsWith('.pdf')) { showToast('Only PDF files are accepted', 'error'); return; }
+  if (file.size > 50 * 1024 * 1024) { showToast('File too large (max 50MB)', 'error'); return; }
+
+  const progress = document.getElementById('uploadProgress');
+  const bar = document.getElementById('progressBar');
+  const label = document.getElementById('progressLabel');
+  const status = document.getElementById('progressStatus');
+
+  progress.style.display = 'block';
+  dropZone.style.display = 'none';
+  label.textContent = `Uploading ${file.name}...`;
+  status.textContent = 'Sending file...';
+  bar.style.width = '20%';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch(API + '/api/documents/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) throw new Error(data.message || 'Upload failed');
+
+    const docId = data.data.id;
+    bar.style.width = '50%';
+    label.textContent = 'Processing PDF...';
+    status.textContent = 'Extracting text from pages...';
+
+    // Poll until READY or FAILED
+    let attempts = 0;
+    pollInterval = setInterval(async () => {
+      attempts++;
+      const r = await fetch(API + '/api/documents/' + docId);
+      const d = await r.json();
+      const doc = d.data;
+
+      if (doc.status === 'READY') {
+        clearInterval(pollInterval);
+        bar.style.width = '100%';
+        label.textContent = '✅ Ready!';
+        status.textContent = `Extracted ${doc.pageCount} pages. Opening document...`;
+        showToast('PDF processed successfully!', 'success');
+        setTimeout(() => { location.href = 'document.html?id=' + docId; }, 1200);
+      } else if (doc.status === 'FAILED') {
+        clearInterval(pollInterval);
+        bar.style.width = '100%';
+        bar.style.background = '#ff6060';
+        label.textContent = '❌ Processing failed';
+        status.textContent = 'Could not extract text from this PDF.';
+        showToast('Processing failed', 'error');
+      } else if (doc.status === 'EMPTY_TEXT') {
+        clearInterval(pollInterval);
+        bar.style.width = '100%';
+        label.textContent = '⚠️ No text found';
+        status.textContent = 'PDF may be scanned or image-based.';
+      } else {
+        bar.style.width = Math.min(50 + attempts * 5, 90) + '%';
+      }
+
+      if (attempts > 60) { clearInterval(pollInterval); showToast('Timed out waiting for processing', 'error'); }
+    }, 2000);
+
+    loadDocuments();
+  } catch (err) {
+    progress.style.display = 'none';
+    dropZone.style.display = 'block';
+    showToast(err.message || 'Upload failed', 'error');
+  }
+}
+
+// ── Document Library ──────────────────────────────────────────────
+async function loadDocuments() {
+  try {
+    const res = await fetch(API + '/api/documents');
+    const data = await res.json();
+    const docs = data.data || [];
+    const list = document.getElementById('docsList');
+
+    if (docs.length === 0) {
+      list.innerHTML = '<div class="empty"><div class="icon">📂</div><p>No documents yet!</p></div>';
+      return;
+    }
+
+    list.innerHTML = docs.map(d => `
+      <div class="doc-row">
+        <div class="doc-icon">📄</div>
+        <div class="doc-info">
+          <div class="doc-name">${esc(d.originalFilename)}</div>
+          <div class="doc-meta">${fmtSize(d.fileSize)}${d.pageCount ? ' · ' + d.pageCount + ' pages' : ''} · ${fmtDate(d.uploadedAt)}</div>
+        </div>
+        <span class="badge badge-${d.status.toLowerCase()}">${d.status}</span>
+        <div class="doc-actions">
+          ${d.status === 'READY' ? `
+            <a href="document.html?id=${d.id}&tab=explain" class="btn btn-lime">🧠 Explain</a>
+            <a href="document.html?id=${d.id}&tab=chat" class="btn btn-ghost">💬 Chat</a>
+            <a href="quiz.html?docId=${d.id}" class="btn btn-ghost">⚡ Quiz</a>
+          ` : ''}
+          <button class="btn btn-danger" onclick="deleteDoc(${d.id}, '${esc(d.originalFilename)}')">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    document.getElementById('docsList').innerHTML = '<div class="empty"><div class="icon">⚠️</div><p>Cannot reach backend. Is Spring Boot running?</p></div>';
+  }
+}
+
+async function deleteDoc(id, name) {
+  if (!confirm('Delete "' + name + '"? This removes all quizzes too.')) return;
+  try {
+    await fetch(API + '/api/documents/' + id, { method: 'DELETE' });
+    showToast('Document deleted', 'success');
+    loadDocuments();
+  } catch(e) { showToast('Delete failed', 'error'); }
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+function esc(s) { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function fmtSize(b) { if(!b) return '?'; if(b<1024) return b+'B'; if(b<1048576) return (b/1024).toFixed(1)+'KB'; return (b/1048576).toFixed(1)+'MB'; }
+function fmtDate(s) { if(!s) return ''; try { return new Date(s).toLocaleDateString(); } catch(e) { return s; } }
+
+loadDocuments();
+</script>
+</body>
+</html>

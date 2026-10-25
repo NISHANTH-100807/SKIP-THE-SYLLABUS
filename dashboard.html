@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Skip The Syllabus</title>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root { --bg:#050605; --lime:#C5FF4A; --lime-dim:#9acc2e; --text:#e8ffe8; --text-muted:#7a8a70; --card-bg:#0d110c; --border:#1a2218; --radius:12px; }
+body { background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; display:flex; min-height:100vh; }
+/* Sidebar */
+.sidebar { width:240px; min-height:100vh; background:var(--card-bg); border-right:1px solid var(--border); padding:1.5rem 1rem; display:flex; flex-direction:column; gap:0.5rem; position:fixed; top:0; left:0; bottom:0; overflow-y:auto; }
+.logo { font-size:1rem; font-weight:800; color:var(--lime); margin-bottom:1.5rem; padding:0 0.5rem; }
+.nav-item { display:flex; align-items:center; gap:0.75rem; padding:0.625rem 0.75rem; border-radius:8px; color:var(--text-muted); font-size:0.875rem; cursor:pointer; transition:all 0.15s; text-decoration:none; }
+.nav-item:hover,.nav-item.active { background:rgba(197,255,74,0.08); color:var(--lime); }
+.nav-icon { font-size:1.1rem; width:20px; text-align:center; }
+.sidebar-bottom { margin-top:auto; border-top:1px solid var(--border); padding-top:1rem; }
+/* Main */
+.main { margin-left:240px; flex:1; padding:2rem; }
+.page-header { margin-bottom:2rem; }
+.page-header h1 { font-size:1.75rem; font-weight:800; letter-spacing:-0.5px; }
+.page-header p { color:var(--text-muted); margin-top:0.25rem; }
+/* Stats */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:2rem; }
+.stat-card { background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; transition:border-color 0.2s; }
+.stat-card:hover { border-color:rgba(197,255,74,0.3); }
+.stat-card .label { font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; }
+.stat-card .value { font-size:2rem; font-weight:800; color:var(--lime); margin:0.25rem 0; }
+.stat-card .sub { font-size:0.8rem; color:var(--text-muted); }
+/* Cards */
+.card { background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1.5rem; }
+.card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+.card-header h2 { font-size:1rem; font-weight:700; }
+.doc-item { display:flex; align-items:center; gap:1rem; padding:0.75rem; border-radius:8px; transition:background 0.15s; cursor:pointer; border-bottom:1px solid var(--border); }
+.doc-item:last-child { border-bottom:none; }
+.doc-item:hover { background:rgba(255,255,255,0.02); }
+.doc-icon { font-size:1.5rem; flex-shrink:0; }
+.doc-info { flex:1; min-width:0; }
+.doc-name { font-size:0.875rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.doc-meta { font-size:0.75rem; color:var(--text-muted); margin-top:2px; }
+.badge { display:inline-block; padding:2px 8px; border-radius:100px; font-size:0.7rem; font-weight:600; }
+.badge-ready { background:rgba(197,255,74,0.15); color:var(--lime); }
+.badge-processing { background:rgba(255,165,0,0.15); color:orange; }
+.badge-failed { background:rgba(255,80,80,0.15); color:#ff6060; }
+.btn { display:inline-flex; align-items:center; gap:0.4rem; padding:0.5rem 1rem; border-radius:6px; font-size:0.875rem; font-weight:600; cursor:pointer; border:none; transition:all 0.15s; text-decoration:none; }
+.btn-lime { background:var(--lime); color:#050605; }
+.btn-lime:hover { background:#d9ff6a; }
+.btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text-muted); }
+.btn-ghost:hover { border-color:var(--lime); color:var(--lime); }
+.empty-state { text-align:center; padding:3rem; color:var(--text-muted); }
+.empty-state .icon { font-size:3rem; margin-bottom:1rem; }
+.activity-item { display:flex; gap:0.75rem; padding:0.625rem 0; border-bottom:1px solid var(--border); font-size:0.875rem; align-items:flex-start; }
+.activity-item:last-child { border-bottom:none; }
+.activity-type { color:var(--lime); font-size:0.7rem; font-weight:700; text-transform:uppercase; min-width:60px; padding-top:2px; }
+.activity-desc { flex:1; color:var(--text-muted); }
+.activity-time { color:var(--text-muted); font-size:0.75rem; white-space:nowrap; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+@media(max-width:900px){ .two-col{grid-template-columns:1fr;} }
+@media(max-width:700px){ .sidebar{display:none;} .main{margin-left:0;} }
+/* Progress bar */
+.progress-bar-wrap { background:var(--border); border-radius:4px; height:6px; margin-top:0.5rem; }
+.progress-bar-fill { background:var(--lime); height:100%; border-radius:4px; transition:width 0.4s ease; }
+/* Skeleton loader */
+.skeleton { background:linear-gradient(90deg,var(--border) 25%,#232e21 50%,var(--border) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:6px; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="logo">⚡ SKIP THE SYLLABUS</div>
+  <a class="nav-item active" href="dashboard.html"><span class="nav-icon">📊</span>Dashboard</a>
+  <a class="nav-item" href="upload.html"><span class="nav-icon">📤</span>Upload PDF</a>
+  <a class="nav-item" href="quiz.html"><span class="nav-icon">⚡</span>Quiz Lab</a>
+  <a class="nav-item" href="explorer.html"><span class="nav-icon">🔮</span>3D Explorer</a>
+  <a class="nav-item" href="settings.html"><span class="nav-icon">⚙️</span>Settings</a>
+  <div class="sidebar-bottom">
+    <a class="nav-item" href="index.html"><span class="nav-icon">🏠</span>Home</a>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <p id="greeting">Loading your progress...</p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="label">Documents</div><div class="value" id="stat-docs">—</div><div class="sub">uploaded</div></div>
+    <div class="stat-card"><div class="label">Quizzes</div><div class="value" id="stat-quizzes">—</div><div class="sub">generated</div></div>
+    <div class="stat-card"><div class="label">Attempts</div><div class="value" id="stat-attempts">—</div><div class="sub">quiz attempts</div></div>
+    <div class="stat-card"><div class="label">Avg Score</div><div class="value" id="stat-score">—</div><div class="sub">percent correct</div></div>
+    <div class="stat-card"><div class="label">Explains</div><div class="value" id="stat-explains">—</div><div class="sub">sessions</div></div>
+    <div class="stat-card"><div class="label">Chats</div><div class="value" id="stat-chats">—</div><div class="sub">sessions</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header">
+        <h2>📚 Recent Documents</h2>
+        <a href="upload.html" class="btn btn-lime" style="font-size:0.75rem;padding:0.35rem 0.75rem;">+ Upload</a>
+      </div>
+      <div id="docs-list">
+        <div class="empty-state"><div class="icon">📄</div><p>No documents yet. <a href="upload.html" style="color:var(--lime)">Upload one!</a></p></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2>🏃 Recent Activity</h2>
+      </div>
+      <div id="activity-list">
+        <div class="empty-state"><div class="icon">💤</div><p>No activity yet. Start studying!</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>⚡ Recent Quizzes</h2>
+      <a href="quiz.html" class="btn btn-ghost" style="font-size:0.75rem;padding:0.35rem 0.75rem;">View All</a>
+    </div>
+    <div id="quizzes-list">
+      <div class="empty-state"><div class="icon">🧪</div><p>No quizzes yet. <a href="quiz.html" style="color:var(--lime)">Generate one!</a></p></div>
+    </div>
+  </div>
+
+  <div class="card" id="weak-concepts-card" style="display:none">
+    <div class="card-header">
+      <h2>🎯 Concepts Needing Attention (Targeted Review)</h2>
+    </div>
+    <div id="weak-concepts-list"></div>
+  </div>
+</main>
+
+<script src="js/storage.js"></script>
+<script>
+function escHtml(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function formatSize(b) {
+  if (!b) return '?';
+  if (b < 1024) return b + 'B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + 'KB';
+  return (b / 1024 / 1024).toFixed(1) + 'MB';
+}
+
+function timeAgo(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const diff = Math.floor((Date.now() - d) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+function loadDashboard() {
+  const p = SkipStore.getProgress();
+  const docs = SkipStore.getDocs();
+  const attempts = SkipStore.getAttempts();
+
+  document.getElementById('stat-docs').textContent = p.totalDocs;
+  document.getElementById('stat-quizzes').textContent = p.totalQuizzes;
+  document.getElementById('stat-attempts').textContent = p.totalAttempts;
+  document.getElementById('stat-score').textContent = p.avgScore !== null ? p.avgScore + '%' : 'N/A';
+  document.getElementById('stat-explains').textContent = p.explainSessions;
+  document.getElementById('stat-chats').textContent = p.chatSessions;
+
+  const hours = new Date().getHours();
+  const greet = hours < 12 ? 'Good morning' : hours < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greeting').textContent = greet + '! Here\'s your offline learning summary.';
+
+  // Documents
+  const docsList = document.getElementById('docs-list');
+  if (docs.length === 0) {
+    docsList.innerHTML = '<div class="empty-state"><div class="icon">📄</div><p>No documents yet. <a href="upload.html" style="color:var(--lime)">Upload one!</a></p></div>';
+  } else {
+    docsList.innerHTML = docs.slice(0, 6).map(d => `
+      <div class="doc-item" onclick="location.href='document.html?id=${d.id}'">
+        <div class="doc-icon">📄</div>
+        <div class="doc-info">
+          <div class="doc-name">${escHtml(d.name)}</div>
+          <div class="doc-meta">${formatSize(d.size)} · ${d.pages} pages · ${timeAgo(d.uploadedAt)}</div>
+        </div>
+        <span class="badge badge-ready">READY</span>
+      </div>
+    `).join('');
+  }
+
+  // Recent Activity
+  const acts = p.recentActivity || [];
+  const actList = document.getElementById('activity-list');
+  if (acts.length === 0) {
+    actList.innerHTML = '<div class="empty-state"><div class="icon">💤</div><p>No activity yet. Start studying!</p></div>';
+  } else {
+    actList.innerHTML = acts.slice(0, 8).map(a => `
+      <div class="activity-item">
+        <span class="activity-type">${escHtml(a.type)}</span>
+        <span class="activity-desc">${escHtml(a.desc)}</span>
+        <span class="activity-time">${timeAgo(a.timestamp)}</span>
+      </div>
+    `).join('');
+  }
+
+  // Quizzes / Recent Attempts
+  const quizList = document.getElementById('quizzes-list');
+  if (attempts.length === 0) {
+    quizList.innerHTML = '<div class="empty-state"><div class="icon">🧪</div><p>No quiz attempts yet. <a href="quiz.html" style="color:var(--lime)">Take a quiz!</a></p></div>';
+  } else {
+    quizList.innerHTML = attempts.slice(0, 5).map(q => {
+      const pct = Math.round(q.scorePct || 0);
+      return `
+      <div class="doc-item" onclick="location.href='quiz.html?docId=${q.docId}'">
+        <div class="doc-icon">⚡</div>
+        <div class="doc-info">
+          <div class="doc-name">${escHtml(q.docName)} — ${q.correctCount}/${q.totalCount} correct</div>
+          <div class="doc-meta">${timeAgo(q.date)}</div>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <span class="badge badge-${pct >= 70 ? 'ready' : pct >= 40 ? 'processing' : 'failed'}">${pct}%</span>
+      </div>
+    `}).join('');
+  }
+
+  // Weak Concepts
+  const weaks = p.weakConcepts || [];
+  const weakCard = document.getElementById('weak-concepts-card');
+  const weakList = document.getElementById('weak-concepts-list');
+  if (weaks.length > 0) {
+    weakCard.style.display = 'block';
+    weakList.innerHTML = weaks.map(w => `
+      <div class="doc-item" style="cursor:default">
+        <div class="doc-icon">🎯</div>
+        <div class="doc-info">
+          <div class="doc-name">${escHtml(w.name)}</div>
+          <div class="doc-meta">${w.missed} missed across ${w.attempts} attempts · Error rate: ${Math.round(w.errorRate * 100)}%</div>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${Math.round(w.errorRate * 100)}%;background:#ff9500"></div></div>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+loadDashboard();
+</script>
+</body>
+</html>

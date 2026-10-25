@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skip The Syllabus — Your syllabus is cooked. Let's cook back.</title>
+<style>
+/* === GLOBAL === */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #050605;
+  --lime: #C5FF4A;
+  --lime-dim: #9acc2e;
+  --text: #e8ffe8;
+  --text-muted: #7a8a70;
+  --card-bg: #0d110c;
+  --border: #1a2218;
+  --radius: 12px;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; overflow-x: hidden; }
+a { color: inherit; text-decoration: none; }
+/* === NAV === */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  background: rgba(5,6,5,0.8); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.5px; color: var(--lime); }
+.nav-links { display: flex; gap: 1.5rem; align-items: center; }
+.nav-links a { font-size: 0.875rem; color: var(--text-muted); transition: color 0.2s; }
+.nav-links a:hover { color: var(--lime); }
+.btn-cta {
+  background: var(--lime); color: #050605; font-weight: 700; font-size: 0.875rem;
+  padding: 0.5rem 1.25rem; border-radius: 6px; transition: all 0.2s;
+}
+.btn-cta:hover { background: #d9ff6a; transform: translateY(-1px); box-shadow: 0 0 20px rgba(197,255,74,0.4); }
+/* === HERO === */
+.hero {
+  position: relative; min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 8rem 2rem 4rem;
+  overflow: hidden;
+}
+#hero-canvas { position: absolute; inset: 0; z-index: 0; }
+.hero-content { position: relative; z-index: 1; max-width: 800px; }
+.hero-badge {
+  display: inline-block; background: rgba(197,255,74,0.1); border: 1px solid rgba(197,255,74,0.3);
+  color: var(--lime); font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;
+  padding: 0.35rem 1rem; border-radius: 100px; margin-bottom: 1.5rem; text-transform: uppercase;
+}
+.hero h1 {
+  font-size: clamp(2.5rem, 7vw, 5rem); font-weight: 900; line-height: 1.05;
+  letter-spacing: -2px; margin-bottom: 1.5rem;
+}
+.hero h1 span { color: var(--lime); display: block; }
+.hero p { font-size: 1.2rem; color: var(--text-muted); max-width: 520px; margin: 0 auto 2.5rem; line-height: 1.6; }
+.hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+.btn-primary {
+  background: var(--lime); color: #050605; font-weight: 800; font-size: 1rem;
+  padding: 0.875rem 2rem; border-radius: 8px; border: none; cursor: pointer;
+  transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;
+  text-decoration: none;
+}
+.btn-primary:hover { background: #d9ff6a; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(197,255,74,0.4); }
+.btn-secondary {
+  background: transparent; color: var(--text); font-weight: 600; font-size: 1rem;
+  padding: 0.875rem 2rem; border-radius: 8px; border: 1px solid var(--border); cursor: pointer;
+  transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;
+  text-decoration: none;
+}
+.btn-secondary:hover { border-color: var(--lime); color: var(--lime); }
+/* === FEATURES === */
+.features { padding: 6rem 2rem; max-width: 1100px; margin: 0 auto; }
+.section-title { text-align: center; margin-bottom: 3rem; }
+.section-title h2 { font-size: 2.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.75rem; }
+.section-title p { color: var(--text-muted); font-size: 1.1rem; }
+.features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; }
+.feature-card {
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 2rem; transition: all 0.3s; cursor: pointer;
+}
+.feature-card:hover { border-color: var(--lime); transform: translateY(-4px); box-shadow: 0 8px 32px rgba(197,255,74,0.15); }
+.feature-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+.feature-card p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; }
+/* === HOW IT WORKS === */
+.how-it-works { padding: 6rem 2rem; background: var(--card-bg); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.how-inner { max-width: 1100px; margin: 0 auto; }
+.steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; margin-top: 3rem; }
+.step { text-align: center; }
+.step-num { width: 48px; height: 48px; background: rgba(197,255,74,0.1); border: 1px solid rgba(197,255,74,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; color: var(--lime); margin: 0 auto 1rem; }
+.step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+.step p { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; }
+/* === FOOTER === */
+footer {
+  border-top: 1px solid var(--border); padding: 2rem; text-align: center;
+  color: var(--text-muted); font-size: 0.875rem;
+}
+footer span { color: var(--lime); }
+/* === SCROLL REVEAL === */
+.reveal { opacity: 0; transform: translateY(30px); transition: all 0.6s ease; }
+.reveal.visible { opacity: 1; transform: none; }
+/* === GLOW PULSE === */
+@keyframes limePulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(197,255,74,0.3); }
+  50% { box-shadow: 0 0 40px rgba(197,255,74,0.6); }
+}
+.btn-primary { animation: limePulse 3s ease-in-out infinite; }
+.btn-primary:hover { animation: none; }
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo">⚡ SKIP THE SYLLABUS</div>
+  <div class="nav-links">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="upload.html">Upload</a>
+    <a href="quiz.html">Quiz Lab</a>
+    <a href="explorer.html">3D Explorer</a>
+    <a href="dashboard.html" class="btn-cta">Start Now →</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-badge">🎓 AI-Powered Learning Platform</div>
+    <h1>Your syllabus is cooked.<span>Let's cook back.</span></h1>
+    <p>Upload any PDF. Get instant AI explanations, auto-generated quizzes, grounded chat, and immersive 3D visualizations. Your professor's nightmare, your new best friend.</p>
+    <div class="hero-actions">
+      <a href="upload.html" class="btn-primary">Upload a PDF 📄</a>
+      <a href="dashboard.html" class="btn-secondary">View Dashboard →</a>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <div class="section-title reveal">
+    <h2>Everything you need to <span style="color:var(--lime)">skip</span> to the good part</h2>
+    <p>Four powerful modes. One electric-lime interface. Zero excuses.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card reveal" onclick="location.href='upload.html'">
+      <div class="feature-icon">🧠</div>
+      <h3>AI Explain Mode</h3>
+      <p>Type any concept and get a structured breakdown: intuition, examples, key takeaways, and a self-check — all grounded in your document.</p>
+    </div>
+    <div class="feature-card reveal" onclick="location.href='quiz.html'">
+      <div class="feature-icon">⚡</div>
+      <h3>Quiz Lab</h3>
+      <p>Grok generates custom MCQs from your PDF. Submit answers, get scored instantly, and see which concepts you're weak on.</p>
+    </div>
+    <div class="feature-card reveal" onclick="location.href='dashboard.html'">
+      <div class="feature-icon">💬</div>
+      <h3>Grounded Chat</h3>
+      <p>Ask anything about your document. The AI answers only from what's in the PDF — no hallucinations, just facts.</p>
+    </div>
+    <div class="feature-card reveal" onclick="location.href='explorer.html'">
+      <div class="feature-icon">🔮</div>
+      <h3>3D Explorer</h3>
+      <p>Visualize binary search trees, sorting algorithms, and data structures in an interactive 3D environment powered by Three.js.</p>
+    </div>
+  </div>
+</section>
+
+<section class="how-it-works">
+  <div class="how-inner">
+    <div class="section-title reveal">
+      <h2>How it works</h2>
+      <p>From PDF to enlightenment in four steps. Your GPA will thank you.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step reveal">
+        <div class="step-num">1</div>
+        <h3>Upload Your PDF</h3>
+        <p>Drag and drop any textbook chapter, lecture slide, or research paper. We handle the parsing.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">2</div>
+        <h3>AI Processes It</h3>
+        <p>Grok AI reads, segments, and indexes your document so every answer is grounded in your content.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">3</div>
+        <h3>Study Smarter</h3>
+        <p>Explain concepts, chat with your doc, generate quizzes — all tailored to exactly what you uploaded.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">4</div>
+        <h3>Ace the Exam</h3>
+        <p>Track your progress, review weak areas, and go into that exam like you actually read the textbook.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Built with ⚡ by students, for students · <span>Skip The Syllabus</span> · Powered by Grok AI · NMAMIT</p>
+</footer>
+
+<script src="/js/three.min.js"></script>
+<script>
+// ═════════════════════════════════════════════════════════════════
+// CINEMATIC THREE.JS 3D HERO — FLOATING KNOWLEDGE CORE
+// ═════════════════════════════════════════════════════════════════
+(function initHero3D() {
+  const canvas = document.getElementById('hero-canvas');
+  if (!canvas) return;
+
+  // Reduced motion preference check
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Verify WebGL availability
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
+  } catch (e) {
+    console.warn('WebGL not supported, falling back to static visual:', e);
+    return;
+  }
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 0, 7.5);
+
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Root container for mouse parallax
+  const coreGroup = new THREE.Group();
+  scene.add(coreGroup);
+
+  // 1. Inner Brain-like Solid Core (Dark Chrome with Lime Glow)
+  const innerGeo = new THREE.IcosahedronGeometry(1.6, 1);
+  const innerMat = new THREE.MeshStandardMaterial({
+    color: 0x080f07,
+    roughness: 0.3,
+    metalness: 0.9,
+    emissive: 0x163308,
+    emissiveIntensity: 0.7
+  });
+  const innerCore = new THREE.Mesh(innerGeo, innerMat);
+  coreGroup.add(innerCore);
+
+  // 2. Outer Wireframe Cage (Electric Lime)
+  const cageGeo = new THREE.IcosahedronGeometry(2.1, 1);
+  const cageMat = new THREE.MeshBasicMaterial({
+    color: 0xC5FF4A,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.38
+  });
+  const wireCage = new THREE.Mesh(cageGeo, cageMat);
+  coreGroup.add(wireCage);
+
+  // 3. Node Vertices (Glowing Electric Nodes on Cage)
+  const cagePos = cageGeo.attributes.position;
+  const nodesGeo = new THREE.BufferGeometry();
+  const nodeCount = cagePos.count;
+  nodesGeo.setAttribute('position', cagePos);
+
+  const canvasDot = document.createElement('canvas');
+  canvasDot.width = 16; canvasDot.height = 16;
+  const dotCtx = canvasDot.getContext('2d');
+  const dotGrad = dotCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
+  dotGrad.addColorStop(0, 'rgba(197,255,74,1)');
+  dotGrad.addColorStop(0.5, 'rgba(197,255,74,0.4)');
+  dotGrad.addColorStop(1, 'rgba(197,255,74,0)');
+  dotCtx.fillStyle = dotGrad;
+  dotCtx.fillRect(0, 0, 16, 16);
+  const nodeTex = new THREE.CanvasTexture(canvasDot);
+
+  const nodesMat = new THREE.PointsMaterial({
+    size: 0.22,
+    map: nodeTex,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  const nodes = new THREE.Points(nodesGeo, nodesMat);
+  coreGroup.add(nodes);
+
+  // 4. Orbital Rings (Torus Geometry)
+  const ring1Geo = new THREE.TorusGeometry(3.1, 0.016, 16, 120);
+  const ring1Mat = new THREE.MeshBasicMaterial({ color: 0xC5FF4A, transparent: true, opacity: 0.45 });
+  const ring1 = new THREE.Mesh(ring1Geo, ring1Mat);
+  ring1.rotation.x = Math.PI / 3;
+  ring1.rotation.y = Math.PI / 6;
+  coreGroup.add(ring1);
+
+  const ring2Geo = new THREE.TorusGeometry(3.6, 0.012, 16, 120);
+  const ring2Mat = new THREE.MeshBasicMaterial({ color: 0x8BAA52, transparent: true, opacity: 0.3 });
+  const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+  ring2.rotation.x = -Math.PI / 4;
+  ring2.rotation.y = Math.PI / 4;
+  coreGroup.add(ring2);
+
+  // Small satellite orbiter nodes on rings
+  const orbiterGeo = new THREE.SphereGeometry(0.08, 16, 16);
+  const orbiterMat = new THREE.MeshBasicMaterial({ color: 0xC5FF4A });
+  const orbiter1 = new THREE.Mesh(orbiterGeo, orbiterMat);
+  const orbiter2 = new THREE.Mesh(orbiterGeo, orbiterMat);
+  ring1.add(orbiter1);
+  ring2.add(orbiter2);
+
+  // 5. Surrounding Knowledge Particles (Ambient Particle Field)
+  const partCount = 500;
+  const partPos = new Float32Array(partCount * 3);
+  for (let i = 0; i < partCount * 3; i += 3) {
+    partPos[i] = (Math.random() - 0.5) * 18;
+    partPos[i+1] = (Math.random() - 0.5) * 14;
+    partPos[i+2] = (Math.random() - 0.5) * 12;
+  }
+  const partGeo = new THREE.BufferGeometry();
+  partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+  const partMat = new THREE.PointsMaterial({
+    size: 0.08,
+    color: 0xC5FF4A,
+    transparent: true,
+    opacity: 0.45,
+    blending: THREE.AdditiveBlending
+  });
+  const particles = new THREE.Points(partGeo, partMat);
+  scene.add(particles);
+
+  // 6. Lighting
+  const ambientLight = new THREE.AmbientLight(0x0f220d, 1.5);
+  scene.add(ambientLight);
+
+  const limePointLight = new THREE.PointLight(0xC5FF4A, 3.5, 20);
+  limePointLight.position.set(2, 3, 4);
+  scene.add(limePointLight);
+
+  const fillLight = new THREE.DirectionalLight(0x8BAA52, 1.2);
+  fillLight.position.set(-4, -2, 2);
+  scene.add(fillLight);
+
+  // 7. Parallax & Mouse Interactivity
+  let targetMouseX = 0, targetMouseY = 0;
+  let mouseX = 0, mouseY = 0;
+
+  window.addEventListener('mousemove', e => {
+    targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+    targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  // Handle Resize
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  });
+
+  // Animation Loop
+  let clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+
+    const delta = clock.getDelta();
+    const elapsed = clock.getElapsedTime();
+
+    // Smooth mouse lerp
+    mouseX += (targetMouseX - mouseX) * 0.04;
+    mouseY += (targetMouseY - mouseY) * 0.04;
+
+    const speedMultiplier = prefersReducedMotion ? 0.2 : 1.0;
+
+    // Rotations
+    innerCore.rotation.y += 0.005 * speedMultiplier;
+    innerCore.rotation.x += 0.003 * speedMultiplier;
+
+    wireCage.rotation.y -= 0.007 * speedMultiplier;
+    wireCage.rotation.z += 0.004 * speedMultiplier;
+
+    ring1.rotation.z += 0.009 * speedMultiplier;
+    ring2.rotation.z -= 0.006 * speedMultiplier;
+
+    orbiter1.position.x = Math.cos(elapsed * 1.5) * 3.1;
+    orbiter1.position.y = Math.sin(elapsed * 1.5) * 3.1;
+
+    orbiter2.position.x = Math.cos(-elapsed * 1.2) * 3.6;
+    orbiter2.position.y = Math.sin(-elapsed * 1.2) * 3.6;
+
+    // Parallax tilt on coreGroup
+    coreGroup.rotation.y = mouseX * 0.4 + Math.sin(elapsed * 0.4) * 0.08;
+    coreGroup.rotation.x = -mouseY * 0.3 + Math.cos(elapsed * 0.3) * 0.06;
+
+    // Particle field subtle drift
+    particles.rotation.y = elapsed * 0.02 * speedMultiplier;
+
+    // Emissive breathing
+    innerMat.emissiveIntensity = 0.5 + Math.sin(elapsed * 2) * 0.25;
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+})();
+
+// Scroll reveal
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.1 });
+reveals.forEach(r => observer.observe(r));
+
+// Check API health
+fetch('/api/health').then(r => r.json()).then(data => {
+  console.log('Skip The Syllabus API status:', data);
+}).catch(() => console.log('Backend starting up...'));
+</script>
+</body>
+</html>

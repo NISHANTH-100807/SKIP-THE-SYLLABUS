@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Lab — Skip The Syllabus</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050605;--surface:#0B0E0B;--lime:#C5FF4A;--muted:#8BAA52;--text:#F4F6EF;--text-muted:#969D91;--card-bg:#111511;--border:#282D26;--radius:12px}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;min-height:100vh}
+.sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);padding:1.5rem 1rem;display:flex;flex-direction:column;gap:.5rem;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.logo{font-size:.95rem;font-weight:800;color:var(--lime);margin-bottom:1.5rem;padding:0 .5rem;letter-spacing:-.5px}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.625rem .75rem;border-radius:8px;color:var(--text-muted);font-size:.875rem;cursor:pointer;transition:all .15s;text-decoration:none}
+.nav-item:hover,.nav-item.active{background:rgba(197,255,74,.08);color:var(--lime)}
+.main{margin-left:240px;flex:1;padding:2.5rem;max-width:calc(100vw - 240px)}
+@media(max-width:900px){
+  .sidebar{position:static;width:100%;min-height:auto;border-right:none;border-bottom:1px solid var(--border);flex-direction:row;flex-wrap:wrap}
+  .main{margin-left:0;max-width:100%;padding:1.5rem}
+}
+.page-header{margin-bottom:2rem}
+.page-header h1{font-size:1.85rem;font-weight:800;letter-spacing:-.5px;color:var(--text)}
+.page-header p{color:var(--text-muted);margin-top:.35rem;font-size:.95rem}
+.two-col{display:grid;grid-template-columns:360px 1fr;gap:1.75rem;align-items:start}
+@media(max-width:960px){.two-col{grid-template-columns:1fr}}
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.5rem}
+.card h2{font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--text)}
+.input-group{margin-bottom:1.15rem}
+.input-group label{display:block;font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:.45rem;text-transform:uppercase;letter-spacing:.5px}
+.input-group select,.input-group input[type=range]{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.7rem 1rem;color:var(--text);font-size:.875rem;outline:none;transition:border-color .15s}
+.input-group select:focus{border-color:var(--lime)}
+.input-group select option{background:var(--surface);color:var(--text)}
+input[type=range]{-webkit-appearance:none;padding:0;height:6px;background:var(--border);border:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:var(--lime);border-radius:50%}
+.range-labels{display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-muted);margin-top:.35rem}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.625rem 1.25rem;border-radius:8px;font-size:.875rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+.btn-lime{background:var(--lime);color:#050605;width:100%;justify-content:center;padding:.75rem;font-weight:700}
+.btn-lime:hover{background:#d9ff6a;box-shadow:0 0 15px rgba(197,255,74,.3)}
+.btn-lime:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-muted)}
+.btn-ghost:hover{border-color:var(--lime);color:var(--lime)}
+/* Quiz question */
+.question-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-bottom:1.25rem}
+.q-num{font-size:.75rem;color:var(--lime);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem}
+.q-text{font-size:1.05rem;font-weight:600;margin-bottom:1.25rem;line-height:1.5;color:var(--text)}
+.option-row{display:flex;align-items:center;gap:.85rem;padding:.75rem 1rem;border:1px solid var(--border);border-radius:8px;margin-bottom:.6rem;cursor:pointer;transition:all .15s;background:#0d110c}
+.option-row:hover{border-color:rgba(197,255,74,.4);background:rgba(197,255,74,.04)}
+.option-row.selected{border-color:var(--lime);background:rgba(197,255,74,.12)}
+.option-label{font-size:.85rem;font-weight:700;color:var(--lime);min-width:24px;width:24px;height:24px;border-radius:50%;border:1px solid rgba(197,255,74,.3);display:flex;align-items:center;justify-content:center}
+.option-row.selected .option-label{background:var(--lime);color:#050605}
+.option-text{font-size:.9rem;line-height:1.4}
+/* Result */
+.score-circle{width:130px;height:130px;border-radius:50%;border:4px solid var(--lime);display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 1.5rem;box-shadow:0 0 20px rgba(197,255,74,.15)}
+.score-pct{font-size:2.2rem;font-weight:900;color:var(--lime)}
+.score-sub{font-size:.78rem;color:var(--text-muted)}
+.score-msg{text-align:center;margin-bottom:1.75rem;font-size:1.05rem;line-height:1.5;color:var(--text)}
+.result-item{border-bottom:1px solid var(--border);padding:1rem 0}
+.result-item:last-child{border-bottom:none}
+.result-q{font-size:.95rem;font-weight:600;margin-bottom:.4rem;line-height:1.4}
+.result-meta{font-size:.82rem;color:var(--text-muted);line-height:1.5}
+.result-correct{color:var(--lime);font-weight:600}
+.result-wrong{color:#ff6060;font-weight:600}
+.badge{display:inline-block;padding:3px 9px;border-radius:100px;font-size:.72rem;font-weight:600}
+.badge-ready{background:rgba(197,255,74,.15);color:var(--lime);border:1px solid rgba(197,255,74,.3)}
+.empty{text-align:center;padding:2.5rem;color:var(--text-muted)}
+.loader{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--lime);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<nav class="sidebar">
+  <div class="logo">⚡ SKIP THE SYLLABUS</div>
+  <a class="nav-item" href="dashboard.html">📊 Dashboard</a>
+  <a class="nav-item" href="upload.html">📤 Upload PDF</a>
+  <a class="nav-item active" href="quiz.html">⚡ Quiz Lab</a>
+  <a class="nav-item" href="explorer.html">🔮 3D Explorer</a>
+  <a class="nav-item" href="settings.html">⚙️ Settings</a>
+  <a class="nav-item" href="index.html" style="margin-top:auto">🏠 Home</a>
+</nav>
+
+<main class="main">
+  <div class="page-header">
+    <h1>⚡ Quiz Lab</h1>
+    <p>Generate syllabus-grounded quizzes from your notes. Test your mastery before the exam tests you.</p>
+  </div>
+
+  <div class="two-col">
+    <!-- Config panel -->
+    <div>
+      <div class="card">
+        <h2>📋 Quiz Setup</h2>
+        <div class="input-group">
+          <label>Select Document</label>
+          <select id="docSelect"><option value="">Loading documents...</option></select>
+        </div>
+        <div class="input-group">
+          <label>Questions: <span id="qCountLabel">5</span></label>
+          <input type="range" id="qCount" min="2" max="10" value="5"
+            oninput="document.getElementById('qCountLabel').textContent=this.value">
+          <div class="range-labels"><span>2</span><span>5</span><span>10</span></div>
+        </div>
+        <div class="input-group">
+          <label>Difficulty</label>
+          <select id="difficulty">
+            <option value="mixed">🎲 Mixed Exam Level</option>
+            <option value="easy">🟢 Easy (Concept Recalls)</option>
+            <option value="medium">🟡 Medium (Application & Trace)</option>
+            <option value="hard">🔴 Hard (Edge Cases & Complexities)</option>
+          </select>
+        </div>
+        <button class="btn btn-lime" id="genBtn" onclick="startGeneratedQuiz()">⚡ Generate Quiz</button>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <h2 style="margin-bottom:0">📜 Quiz Attempts</h2>
+          <span class="badge badge-ready" id="attemptCountBadge">0 attempts</span>
+        </div>
+        <div id="recentAttempts"><div class="empty">No attempts yet. Take your first quiz!</div></div>
+      </div>
+    </div>
+
+    <!-- Quiz / Result panel -->
+    <div>
+      <div id="quizPanel" style="display:none"></div>
+      <div id="resultPanel" style="display:none"></div>
+      <div id="placeholder" class="card">
+        <div class="empty">
+          <div style="font-size:2.8rem;margin-bottom:.75rem">⚡</div>
+          <h3 style="color:var(--text);font-size:1.1rem;margin-bottom:.4rem">Your Syllabus Is Cooked. Let's Cook Back.</h3>
+          <p>Select your uploaded lecture notes on the left, pick question count and difficulty, then click <strong>Generate Quiz</strong> to begin.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/storage.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+let currentQuiz = null;
+let selectedAnswers = {};
+
+function initDocs() {
+  const docs = SkipStore.getDocs();
+  const sel = document.getElementById('docSelect');
+  if (!docs || docs.length === 0) {
+    sel.innerHTML = '<option value="">No documents found — upload one first</option>';
+    return;
+  }
+  sel.innerHTML = docs.map(d => `<option value="${d.id}">${esc(d.name)} (${d.pages} pgs)</option>`).join('');
+
+  const preDoc = params.get('docId');
+  if (preDoc && docs.some(d => String(d.id) === String(preDoc))) {
+    sel.value = preDoc;
+  }
+}
+
+function loadAttempts() {
+  const attempts = SkipStore.getAttempts();
+  const el = document.getElementById('recentAttempts');
+  const badge = document.getElementById('attemptCountBadge');
+  badge.textContent = `${attempts.length} attempt${attempts.length === 1 ? '' : 's'}`;
+
+  if (!attempts || attempts.length === 0) {
+    el.innerHTML = '<div class="empty">No attempts yet. Finish a quiz to track scores.</div>';
+    return;
+  }
+
+  el.innerHTML = attempts.slice(0, 8).map(h => {
+    const pct = Math.round(h.scorePct || 0);
+    const color = pct >= 70 ? 'var(--lime)' : pct >= 40 ? 'orange' : '#ff6060';
+    return `
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.7rem 0;border-bottom:1px solid var(--border);font-size:.85rem">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(h.docName)}</div>
+        <div style="color:var(--text-muted);font-size:.75rem">${h.correct}/${h.total} correct · ${fmtDate(h.timestamp)}</div>
+      </div>
+      <span class="badge" style="border:1px solid ${color};color:${color};font-weight:700">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+function startGeneratedQuiz() {
+  const docId = document.getElementById('docSelect').value;
+  if (!docId) {
+    alert('Please select a document first (or upload one from the Upload page).');
+    return;
+  }
+
+  const questionCount = parseInt(document.getElementById('qCount').value, 10);
+  const difficulty = document.getElementById('difficulty').value;
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Generating Quiz...';
+
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('resultPanel').style.display = 'none';
+
+  setTimeout(() => {
+    try {
+      currentQuiz = SkipStore.generateQuiz(docId, questionCount, difficulty);
+      selectedAnswers = {};
+      renderQuiz(currentQuiz);
+    } catch(e) {
+      alert("Error generating quiz: " + e.message);
+      document.getElementById('placeholder').style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '⚡ Generate Quiz';
+    }
+  }, 400);
+}
+
+function renderQuiz(quiz) {
+  const letters = ['A', 'B', 'C', 'D'];
+  const qs = quiz.questions || [];
+  let html = `<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;border-bottom:1px solid var(--border);padding-bottom:1rem">
+      <div>
+        <h2 style="margin-bottom:.25rem">📝 ${esc(quiz.docName)}</h2>
+        <span style="color:var(--text-muted);font-size:.82rem">${qs.length} questions · Difficulty: <strong style="color:var(--lime)">${quiz.difficulty}</strong></span>
+      </div>
+      <span class="badge badge-ready">DEMO GENERATED</span>
+    </div>`;
+
+  qs.forEach((q, qi) => {
+    html += `<div class="question-card" id="q-card-${qi}">
+      <div class="q-num">Question ${qi + 1} of ${qs.length} · Concept: ${esc(q.concept || 'General')}</div>
+      <div class="q-text">${esc(q.text)}</div>`;
+    
+    (q.options || []).forEach((opt, oi) => {
+      const letter = letters[oi];
+      html += `<div class="option-row" id="opt-${qi}-${oi}" onclick="selectAnswer(${qi}, ${oi})">
+        <span class="option-label">${letter}</span>
+        <span class="option-text">${esc(opt)}</span>
+      </div>`;
+    });
+    html += '</div>';
+  });
+
+  html += `<button class="btn btn-lime" onclick="submitQuiz()" id="submitBtn" style="margin-top:.75rem">Submit Quiz For Evaluation →</button></div>`;
+  const panel = document.getElementById('quizPanel');
+  panel.innerHTML = html;
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function selectAnswer(qi, optionIdx) {
+  const totalOpts = currentQuiz.questions[qi].options.length;
+  for (let i = 0; i < totalOpts; i++) {
+    const el = document.getElementById(`opt-${qi}-${i}`);
+    if (el) el.classList.remove('selected');
+  }
+  const sel = document.getElementById(`opt-${qi}-${optionIdx}`);
+  if (sel) sel.classList.add('selected');
+  selectedAnswers[qi] = optionIdx;
+}
+
+function submitQuiz() {
+  if (!currentQuiz) return;
+  const qs = currentQuiz.questions;
+  const answeredCount = Object.keys(selectedAnswers).length;
+
+  if (answeredCount < qs.length) {
+    if (!confirm(`You have only answered ${answeredCount} of ${qs.length} questions. Submit anyway?`)) {
+      return;
+    }
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Evaluating...';
+
+  setTimeout(() => {
+    let correctCount = 0;
+    const questionResults = [];
+
+    qs.forEach((q, qi) => {
+      const submittedIdx = selectedAnswers[qi];
+      const isCorrect = submittedIdx !== undefined && submittedIdx === q.correct;
+      if (isCorrect) {
+        correctCount++;
+        SkipStore.recordPassedConcept(q.concept || "General Knowledge");
+      } else {
+        SkipStore.recordMissedConcept(q.concept || "General Knowledge");
+      }
+
+      questionResults.push({
+        questionText: q.text,
+        submittedAnswer: submittedIdx !== undefined ? q.options[submittedIdx] : null,
+        correctAnswer: q.options[q.correct],
+        isCorrect,
+        explanation: q.explanation || "Review the corresponding unit in your syllabus notes.",
+        concept: q.concept,
+        page: q.page
+      });
+    });
+
+    const scorePct = Math.round((correctCount / qs.length) * 100);
+
+    let scoreMessage = "Good baseline. Review the explanations below and try another attempt.";
+    if (scorePct === 100) {
+      scoreMessage = "Flawless score! Your syllabus was thoroughly dismantled. Ready for the exam.";
+    } else if (scorePct >= 75) {
+      scoreMessage = "Solid A-territory! Just a few tricky edge cases to polish up.";
+    } else if (scorePct >= 50) {
+      scoreMessage = "Passing mark, but you're hovering in the danger zone. Check the weak concepts in Dashboard.";
+    } else {
+      scoreMessage = "Currently cooked. Hit the 3D visualizers in 3D Explorer and review the concepts below!";
+    }
+
+    const attempt = {
+      id: Date.now(),
+      docId: currentQuiz.docId,
+      docName: currentQuiz.docName,
+      total: qs.length,
+      correct: correctCount,
+      scorePct,
+      scoreMessage,
+      timestamp: new Date().toISOString()
+    };
+
+    SkipStore.saveAttempt(attempt);
+
+    renderResult({
+      scorePct,
+      correctAnswers: correctCount,
+      totalQuestions: qs.length,
+      scoreMessage,
+      questionResults
+    });
+  }, 400);
+}
+
+function renderResult(result) {
+  const pct = result.scorePct;
+  const color = pct >= 75 ? 'var(--lime)' : pct >= 50 ? 'orange' : '#ff6060';
+
+  let html = `<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem">
+      <h2>📊 Quiz Results Evaluation</h2>
+      <span class="badge badge-ready">Saved to Progress</span>
+    </div>
+    <div class="score-circle" style="border-color:${color}">
+      <div class="score-pct" style="color:${color}">${pct}%</div>
+      <div class="score-sub">${result.correctAnswers}/${result.totalQuestions} correct</div>
+    </div>
+    <div class="score-msg"><strong>${esc(result.scoreMessage)}</strong></div>
+    <div style="display:flex;gap:1rem;margin-bottom:1.5rem">
+      <button class="btn btn-lime" onclick="startGeneratedQuiz()" style="flex:1">↻ Try Another Quiz</button>
+      <a class="btn btn-ghost" href="dashboard.html" style="padding:.75rem 1.25rem">View Dashboard →</a>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:1.25rem">
+      <h3 style="font-size:.95rem;margin-bottom:1rem;color:var(--text)">Detailed Question Review</h3>`;
+
+  (result.questionResults || []).forEach((q, idx) => {
+    const icon = q.isCorrect ? '✅' : '❌';
+    html += `<div class="result-item">
+      <div class="result-q">${icon} Q${idx+1}: ${esc(q.questionText)}</div>
+      <div class="result-meta">
+        Your answer: <span class="${q.isCorrect ? 'result-correct' : 'result-wrong'}">${esc(q.submittedAnswer || '(Unanswered)')}</span><br>
+        ${!q.isCorrect ? `Correct answer: <span class="result-correct">${esc(q.correctAnswer)}</span><br>` : ''}
+        ${q.concept ? `Concept: <span style="color:var(--lime)">${esc(q.concept)}</span> (Page ${q.page || 1})<br>` : ''}
+        <div style="margin-top:.4rem;padding:.5rem .75rem;background:#060806;border-radius:6px;border:1px solid var(--border);color:#c0d0b0">
+          💡 ${esc(q.explanation)}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += '</div></div>';
+
+  document.getElementById('quizPanel').style.display = 'none';
+  const rp = document.getElementById('resultPanel');
+  rp.innerHTML = html;
+  rp.style.display = 'block';
+  rp.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  loadAttempts();
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=String(s||'');return d.innerHTML;}
+function fmtDate(s){if(!s)return'';try{return new Date(s).toLocaleDateString();}catch(e){return s;}}
+
+initDocs();
+loadAttempts();
+</script>
+</body>
+</html>
